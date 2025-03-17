@@ -50,6 +50,26 @@ import { ElMessage } from 'element-plus'
 const trainStore = useTrainStore()
 const fileList = ref([])
 
+// 添加时间格式处理函数
+const formatTime = (value) => {
+  if (!value) return ''
+  
+  // 如果已经是正确的时间格式，直接返回
+  if (typeof value === 'string' && value.includes(':')) {
+    return value
+  }
+  
+  // 处理Excel中的时间数值
+  if (typeof value === 'number') {
+    const totalMinutes = Math.round(value * 24 * 60)
+    const hours = Math.floor(totalMinutes / 60) % 24
+    const minutes = totalMinutes % 60
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
+  }
+  
+  return ''
+}
+
 const handleFileChange = (file) => {
   fileList.value = [file]
 }
@@ -68,31 +88,38 @@ const handleImport = () => {
       const data = e.target.result
       const workbook = XLSX.read(data, { type: 'array' })
       const firstSheet = workbook.Sheets[workbook.SheetNames[0]]
-      const jsonData = XLSX.utils.sheet_to_json(firstSheet)
+      const jsonData = XLSX.utils.sheet_to_json(firstSheet, { range: 1 })
+      
+      console.log('Excel原始数据:', jsonData)
       
       // 处理Excel数据，确保字段名称匹配
-      const processedData = jsonData.map(item => ({
-        bureau: item['担当局'] || '',
-        trainNo: item['车次'] || '',
-        route: item['运行区间'] || '',
-        arrivalTime: item['到点'] || '',
-        departureTime: item['开点'] || '',
-        track: item['股道'] || '',
-        platform: item['站台'] || '',
-        stopTime: item['站停'] || '',
-        trainType: item['车型'] || '',
-        capacity: item['定员'] || '',
-        formation: item['编组'] || '',
-        ticketGate: item['检票口'] || '',
-        ticketTime: item['开检时间'] || '',
-        ticketStaffTime: item['检票上岗时间'] || '',
-        platformStaffTime: item['站台上岗时间'] || '',
-        foldingTime: item['立折时间'] || '',
-        waterService: item['给水作业'] || '',
-        sewageService: item['吸污'] || '',
-        luggageService: item['行包作业'] || '',
-        remark: item['备注'] || ''
-      }))
+      const processedData = jsonData.map(item => {
+        console.log('处理单行数据:', item)
+        return {
+          bureau: item['担当局'] || '',
+          trainNo: item['车次'] || '',
+          route: item['运行区间'] || '',
+          arrivalTime: formatTime(item['到点']),
+          departureTime: formatTime(item['开点']),
+          track: item['股道'] || '',
+          platform: item['站台'] || '',
+          stopTime: formatTime(item['站停']),
+          trainType: item['车型'] || '',
+          capacity: item['定员'] || '',
+          formation: item['编组'] || '',
+          ticketGate: item['检票口'] || '',
+          ticketTime: formatTime(item['开检时间']),
+          ticketStaffTime: formatTime(item['检票上岗时间']),
+          platformStaffTime: formatTime(item['站台上岗时间']),
+          foldingTime: formatTime(item['立折时间']),
+          waterService: item['给水作业'] || '',
+          sewageService: item['吸污'] || '',
+          luggageService: item['行包作业'] || '',
+          remark: item['备注'] || ''
+        }
+      })
+
+      console.log('处理后的数据:', processedData)
 
       trainStore.addTrains(processedData)
       ElMessage.success('数据导入成功')

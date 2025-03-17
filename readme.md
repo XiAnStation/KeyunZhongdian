@@ -7,7 +7,7 @@
 ### 安装依赖
 
 ```bash
-yarn
+yarn install
 ```
 
 ### 开发模式
