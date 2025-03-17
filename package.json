@@ -10,7 +10,8 @@
     "electron:build": "vite build && electron-builder",
     "start": "electron-forge start",
     "package": "electron-forge package",
-    "make": "electron-forge make"
+    "make": "electron-forge make",
+    "postinstall": "electron-builder install-app-deps"
   },
   "build": {
     "appId": "com.keyun.zhongdian",
