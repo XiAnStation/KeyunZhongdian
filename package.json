@@ -6,26 +6,52 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "electron:dev": "cross-env NODE_ENV=development electron .",
+    "electron:dev": "chcp 65001 && cross-env NODE_ENV=development electron .",
     "electron:build": "vite build && electron-builder",
-    "start": "electron-forge start",
-    "package": "electron-forge package",
-    "make": "electron-forge make",
+    "build:win": "vite build && electron-builder --win --config",
+    "preview": "vite preview",
     "postinstall": "electron-builder install-app-deps"
   },
   "build": {
     "appId": "com.keyun.zhongdian",
     "productName": "重点旅客信息系统",
     "directories": {
-      "output": "release"
+      "output": "release",
+      "buildResources": "build"
     },
+    "files": [
+      "dist/**/*",
+      "main.js",
+      "error.html",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "dist",
+        "to": "dist"
+      }
+    ],
+    "asar": false,
     "win": {
-      "target": "nsis"
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico"
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut": true
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "重点旅客信息系统",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "installerHeaderIcon": "build/icon.ico"
     }
   },
   "author": "wang",

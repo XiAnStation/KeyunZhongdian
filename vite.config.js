@@ -22,10 +22,17 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     emptyOutDir: true,
+    assetsDir: 'assets',
     rollupOptions: {
       output: {
-        format: 'cjs'
+        format: 'es',
+        entryFileNames: 'assets/[name]-[hash].js',
+        chunkFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash].[ext]'
       }
-    }
+    },
+    target: 'chrome94',
+    minify: 'esbuild',
+    sourcemap: true
   }
 }) 
