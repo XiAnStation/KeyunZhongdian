@@ -15,40 +15,107 @@
       </el-button>
     </el-upload>
 
-    <el-table :data="trainStore.trainList" style="width: 100%; margin-top: 20px">
-      <el-table-column prop="id" label="序号" width="80" />
-      <el-table-column prop="bureau" label="担当局" />
-      <el-table-column prop="trainNo" label="车次" />
-      <el-table-column prop="route" label="运行区间" />
-      <el-table-column prop="arrivalTime" label="到点" />
-      <el-table-column prop="departureTime" label="开点" />
-      <el-table-column prop="track" label="股道" />
-      <el-table-column prop="platform" label="站台" />
-      <el-table-column prop="stopTime" label="站停" />
-      <el-table-column prop="trainType" label="车型" />
-      <el-table-column prop="capacity" label="定员" />
-      <el-table-column prop="formation" label="编组" />
-      <el-table-column prop="ticketGate" label="检票口" />
-      <el-table-column prop="ticketTime" label="开检时间" />
-      <el-table-column prop="ticketStaffTime" label="检票上岗时间" />
-      <el-table-column prop="platformStaffTime" label="站台上岗时间" />
-      <el-table-column prop="foldingTime" label="立折时间" />
-      <el-table-column prop="waterService" label="给水作业" />
-      <el-table-column prop="sewageService" label="吸污" />
-      <el-table-column prop="luggageService" label="行包作业" />
-      <el-table-column prop="remark" label="备注" />
+    <div class="search-box">
+      <el-input
+        v-model="searchQuery"
+        placeholder="请输入车次号搜索"
+        class="search-input"
+        clearable
+        @clear="handleSearch"
+        @keyup.enter="handleSearch">
+        <template #prefix>
+          <el-icon><Search /></el-icon>
+        </template>
+      </el-input>
+    </div>
+
+    <el-table 
+      :data="paginatedData" 
+      style="width: 100%; margin-top: 20px"
+      border>
+      <el-table-column prop="id" label="序号" width="60" fixed="left" />
+      <el-table-column prop="trainNo" label="车次" width="100" fixed="left" />
+      <el-table-column prop="bureau" label="担当局" width="100" />
+      <el-table-column prop="route" label="运行区间" width="150" />
+      <el-table-column prop="arrivalTime" label="到点" width="80" />
+      <el-table-column prop="departureTime" label="开点" width="80" />
+      <el-table-column prop="track" label="股道" width="80" />
+      <el-table-column prop="platform" label="站台" width="80" />
+      <el-table-column prop="stopTime" label="站停" width="80" />
+      <el-table-column prop="trainType" label="车型" width="100" />
+      <el-table-column prop="capacity" label="定员" width="80" />
+      <el-table-column prop="formation" label="编组" width="100" />
+      <el-table-column prop="ticketGate" label="检票口" width="100" />
+      <el-table-column prop="ticketTime" label="开检时间" width="100" />
+      <el-table-column prop="ticketStaffTime" label="检票上岗时间" width="120" />
+      <el-table-column prop="platformStaffTime" label="站台上岗时间" width="120" />
+      <el-table-column prop="foldingTime" label="立折时间" width="100" />
+      <el-table-column prop="waterService" label="给水作业" width="100" />
+      <el-table-column prop="sewageService" label="吸污" width="80" />
+      <el-table-column prop="luggageService" label="行包作业" width="100" />
+      <el-table-column prop="remark" label="备注" min-width="150" />
     </el-table>
+
+    <div class="pagination-container">
+      <el-pagination
+        v-model:current-page="currentPage"
+        v-model:page-size="pageSize"
+        :page-sizes="[10, 20, 50, 100]"
+        :total="filteredData.length"
+        layout="total, sizes, prev, pager, next, jumper"
+        @size-change="handleSizeChange"
+        @current-change="handleCurrentChange"
+      />
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import * as XLSX from 'xlsx'
 import { useTrainStore } from '../store/train'
 import { ElMessage } from 'element-plus'
+import { Search } from '@element-plus/icons-vue'
 
 const trainStore = useTrainStore()
 const fileList = ref([])
+const searchQuery = ref('')
+const currentPage = ref(1)
+const pageSize = ref(20)
+
+// 过滤后的数据
+const filteredData = computed(() => {
+  if (!searchQuery.value) {
+    return trainStore.trainList
+  }
+  const query = searchQuery.value.toString().toLowerCase()
+  return trainStore.trainList.filter(train => 
+    train.trainNo.toString().toLowerCase().includes(query)
+  )
+})
+
+// 分页后的数据
+const paginatedData = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  const end = start + pageSize.value
+  return filteredData.value.slice(start, end)
+})
+
+// 处理搜索
+const handleSearch = () => {
+  currentPage.value = 1 // 重置到第一页
+}
+
+// 处理每页显示数量变化
+const handleSizeChange = (val) => {
+  pageSize.value = val
+  currentPage.value = 1 // 重置到第一页
+}
+
+// 处理页码变化
+const handleCurrentChange = (val) => {
+  currentPage.value = val
+}
 
 // 添加时间格式处理函数
 const formatTime = (value) => {
@@ -142,7 +209,40 @@ const handleImport = () => {
   margin-bottom: 20px;
 }
 
-.el-table {
+.search-box {
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.search-input {
+  width: 300px;
+}
+
+.pagination-container {
   margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+:deep(.el-table) {
+  .el-table__header-wrapper {
+    th {
+      background-color: #f5f7fa;
+      color: #606266;
+      font-weight: bold;
+    }
+  }
+  
+  .el-table__row {
+    &:hover {
+      background-color: #f5f7fa;
+    }
+  }
+}
+
+:deep(.el-pagination) {
+  margin-top: 20px;
+  justify-content: flex-end;
 }
 </style> 
