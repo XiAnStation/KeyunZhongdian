@@ -14,6 +14,11 @@
       <el-table-column prop="name" label="姓名" />
       <el-table-column prop="type" label="类别" />
       <el-table-column prop="service" label="服务" />
+      <el-table-column label="开检时间">
+        <template #default="scope">
+          {{ getTicketTime(scope.row.trainNo) }}
+        </template>
+      </el-table-column>
       <el-table-column prop="companions" label="同行人数" />
       <el-table-column prop="cardNo" label="牌号" />
       <el-table-column prop="remark" label="备注" />
@@ -105,7 +110,25 @@ const rules = {
   date: [{ required: true, message: '请选择日期', trigger: 'change' }],
   trainNo: [{ required: true, message: '请选择车次', trigger: 'change' }],
   name: [{ required: true, message: '请输入姓名', trigger: 'blur' }],
-  type: [{ required: true, message: '请选择类别', trigger: 'change' }]
+  type: [{ required: true, message: '请选择类别', trigger: 'change' }],
+  cardNo: [
+    { required: true, message: '请输入牌号', trigger: 'blur' },
+    {
+      validator: (rule, value, callback) => {
+        if (value) {
+          const isDuplicate = passengerStore.isCardNoDuplicate(value, formType.value === 'edit' ? form.value.id : null)
+          if (isDuplicate) {
+            callback(new Error('该牌号已存在'))
+          } else {
+            callback()
+          }
+        } else {
+          callback()
+        }
+      },
+      trigger: 'blur'
+    }
+  ]
 }
 
 const form = ref({
@@ -170,6 +193,12 @@ const handleSubmit = async () => {
       dialogVisible.value = false
     }
   })
+}
+
+// 获取车次的开检时间
+const getTicketTime = (trainNo) => {
+  const train = trainStore.getTrainByNo(trainNo)
+  return train ? train.ticketTime : ''
 }
 </script>
 
