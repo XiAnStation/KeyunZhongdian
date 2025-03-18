@@ -138,20 +138,20 @@ const dialogVisible = ref(false)
 const currentTrain = ref(null)
 
 // 统计数据
-const trainCount = computed(() => trainStore.trainList.length)
-const passengerCount = computed(() => passengerStore.passengerList.length)
-const serviceCount = computed(() => {
-  const services = new Set(passengerStore.passengerList.map(p => p.service))
-  return services.size
-})
+const trainCount = ref(trainStore.trainList.length)
+const passengerCount = ref(passengerStore.passengerList.length)
+const serviceCount = ref(new Set(passengerStore.passengerList.map(p => p.service)).size)
 
-// 获取今日旅客并按开检时间排序
-const todayPassengers = computed(() => {
+// 今日旅客列表
+const todayPassengers = ref([])
+
+// 更新今日旅客列表
+const updateTodayPassengers = () => {
   const today = new Date().toISOString().split('T')[0]
-  const passengers = passengerStore.passengerList.filter(p => p.date === today) // 移除离厅状态过滤
+  const passengers = passengerStore.passengerList.filter(p => p.date === today)
   
   // 按开检时间排序
-  return passengers.sort((a, b) => {
+  todayPassengers.value = passengers.sort((a, b) => {
     const timeA = getTicketTime(a.trainNo)
     const timeB = getTicketTime(b.trainNo)
     
@@ -167,7 +167,7 @@ const todayPassengers = computed(() => {
     // 如果时间格式不正确，按字符串比较
     return timeA.localeCompare(timeB)
   })
-})
+}
 
 // 根据类别返回标签类型
 const getTypeTagType = (type) => {
@@ -209,31 +209,44 @@ const isNearTicketTime = (trainNo) => {
   const ticketDateTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes)
   
   // 计算时间差（分钟）
-  const diffMinutes = Math.abs(ticketDateTime - now) / (1000 * 60)
-  return diffMinutes <= 20
+  const diffMinutes = (ticketDateTime - now) / (1000 * 60)
+  return diffMinutes > 0 && diffMinutes <= 20
+}
+
+// 检查是否已过开检时间
+const isExpiredTicketTime = (trainNo) => {
+  const ticketTime = getTicketTime(trainNo)
+  if (!ticketTime) return false
+  
+  const now = new Date()
+  const [hours, minutes] = ticketTime.split(':').map(Number)
+  const ticketDateTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes)
+  
+  // 计算时间差（分钟）
+  const diffMinutes = (ticketDateTime - now) / (1000 * 60)
+  return diffMinutes < 0
 }
 
 // 检查并发送提醒
 const checkAndNotify = () => {
-  const today = new Date().toISOString().split('T')[0]
+  const now = new Date()
+  const today = now.toISOString().split('T')[0]
   const passengers = passengerStore.passengerList.filter(p => p.date === today)
   
   passengers.forEach(passenger => {
     const ticketTime = getTicketTime(passenger.trainNo)
     if (!ticketTime) return
     
-    const now = new Date()
     const [hours, minutes] = ticketTime.split(':').map(Number)
     const ticketDateTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes)
     
     // 计算时间差（分钟）
-    const diffMinutes = Math.abs(ticketDateTime - now) / (1000 * 60)
+    const diffMinutes = (ticketDateTime - now) / (1000 * 60)
     
-    // 如果时间差在20分钟内，发送提醒
-    if (diffMinutes <= 20) {
+    // 如果时间差在20分钟内且未过期，发送提醒
+    if (diffMinutes > 0 && diffMinutes <= 20) {
       ElNotification({
         title: '开检时间提醒',
-        message: `车次 ${passenger.trainNo} 的旅客 ${passenger.name} 即将开检，开检时间：${ticketTime}`,
         type: 'warning',
         duration: 10000,
         position: 'top-right',
@@ -253,6 +266,7 @@ const checkAndNotify = () => {
 }
 
 let checkInterval
+let updateInterval
 
 // 页面加载时启动定时检查
 onMounted(() => {
@@ -264,6 +278,20 @@ onMounted(() => {
   // 每5分钟检查一次开检时间
   checkInterval = setInterval(checkAndNotify, 5 * 60 * 1000)
   
+  // 每10秒更新一次页面数据
+  updateInterval = setInterval(() => {
+    // 强制更新当前时间
+    currentTime.value = new Date().toLocaleDateString()
+    // 强制重新计算统计数据
+    trainCount.value = trainStore.trainList.length
+    passengerCount.value = passengerStore.passengerList.length
+    serviceCount.value = new Set(passengerStore.passengerList.map(p => p.service)).size
+    // 更新今日旅客列表
+    updateTodayPassengers()
+  }, 10000)
+  
+  // 立即执行一次更新
+  updateTodayPassengers()
   // 立即执行一次检查
   checkAndNotify()
 })
@@ -273,11 +301,19 @@ onUnmounted(() => {
   if (checkInterval) {
     clearInterval(checkInterval)
   }
+  if (updateInterval) {
+    clearInterval(updateInterval)
+  }
 })
 
 // 获取行的类名
 const getRowClassName = ({ row }) => {
-  return isNearTicketTime(row.trainNo) ? 'urgent-row' : ''
+  if (isNearTicketTime(row.trainNo)) {
+    return 'urgent-row'
+  } else if (isExpiredTicketTime(row.trainNo)) {
+    return 'expired-row'
+  }
+  return ''
 }
 
 // 处理离厅
@@ -348,6 +384,11 @@ const handleMarkAsLeft = (row) => {
 :deep(.el-table__row) {
   &.urgent-row {
     background-color: #fef0f0 !important;
+  }
+  
+  &.expired-row {
+    background-color: #f5f7fa !important;
+    color: #909399 !important;
   }
 }
 
