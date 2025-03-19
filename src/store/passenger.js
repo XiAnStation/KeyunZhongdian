@@ -1,8 +1,22 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 
 export const usePassengerStore = defineStore('passenger', () => {
-  const passengerList = ref([])
+  // 从localStorage获取初始数据
+  const passengerList = ref(JSON.parse(localStorage.getItem('passengerList') || '[]'))
+
+  // 监听数据变化，自动保存到localStorage
+  watch(passengerList, (newList) => {
+    localStorage.setItem('passengerList', JSON.stringify(newList))
+  }, { deep: true })
+
+  // 检查牌号是否重复
+  const isCardNoDuplicate = (cardNo, excludeId = null) => {
+    return passengerList.value.some(passenger => 
+      passenger.cardNo === cardNo && 
+      (excludeId === null || passenger.id !== excludeId)
+    )
+  }
 
   const addPassenger = (passenger) => {
     const newId = passengerList.value.length > 0 
@@ -12,7 +26,7 @@ export const usePassengerStore = defineStore('passenger', () => {
     passengerList.value.push({
       ...passenger,
       id: newId,
-      date: passenger.date.toISOString().split('T')[0]
+      date: passenger.date
     })
   }
 
@@ -22,7 +36,7 @@ export const usePassengerStore = defineStore('passenger', () => {
       passengerList.value[index] = {
         ...passenger,
         id,
-        date: passenger.date.toISOString().split('T')[0]
+        date: passenger.date
       }
     }
   }
@@ -43,6 +57,7 @@ export const usePassengerStore = defineStore('passenger', () => {
     addPassenger,
     updatePassenger,
     deletePassenger,
-    getPassengersByTrainNo
+    getPassengersByTrainNo,
+    isCardNoDuplicate
   }
 }) 
