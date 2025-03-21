@@ -67,6 +67,11 @@ export const usePassengerStore = defineStore('passenger', () => {
     return passengerList.value
   }
 
+  const clearAllPassengers = (): void => {
+    passengerList.value = []
+    localStorage.removeItem('passengerList')
+  }
+
   return {
     passengerList,
     addPassenger,
@@ -75,6 +80,7 @@ export const usePassengerStore = defineStore('passenger', () => {
     getPassengersByTrainNo,
     isCardNoDuplicate,
     getPassengersByService,
-    getAllPassengers
+    getAllPassengers,
+    clearAllPassengers
   }
 }) 

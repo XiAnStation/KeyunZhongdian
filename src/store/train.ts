@@ -43,9 +43,19 @@ export const useTrainStore = defineStore('train', () => {
     return trainList.value.find(train => train.trainNo === trainNo)
   }
 
+  const updateTrain = (id: number, train: Train): void => {
+    const index = trainList.value.findIndex(t => t.id === id)
+    if (index !== -1) {
+      trainList.value[index] = train
+      // 保存到localStorage
+      localStorage.setItem('trainList', JSON.stringify(trainList.value))
+    }
+  }
+
   return {
     trainList,
     addTrains,
-    getTrainByNo
+    getTrainByNo,
+    updateTrain
   }
 }) 

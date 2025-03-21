@@ -38,10 +38,7 @@
             <div class="card-header">
               <span>剩余重点旅客</span>
               <el-button-group>
-                <el-button type="primary" @click="refreshData">
-                  <el-icon><Refresh /></el-icon>
-                  刷新
-                </el-button>
+                
                 <el-button type="success" @click="handleAdd">
                   <el-icon><Plus /></el-icon>
                   新增旅客
@@ -110,6 +107,15 @@
         <el-descriptions-item label="股道">{{ currentTrain?.track }}</el-descriptions-item>
         <el-descriptions-item label="站台">{{ currentTrain?.platform }}</el-descriptions-item>
         <el-descriptions-item label="站停">{{ currentTrain?.stopTime }}</el-descriptions-item>
+        <el-descriptions-item label="开检时间">
+          <el-time-picker
+            v-if="currentTrain"
+            v-model="currentTrain.ticketTime"
+            format="HH:mm"
+            placeholder="选择开检时间"
+            @change="handleTicketTimeChange"
+          />
+        </el-descriptions-item>
       </el-descriptions>
     </el-dialog>
 
@@ -152,6 +158,7 @@
             <el-option label="弱" value="弱" />
             <el-option label="病" value="病" />
             <el-option label="残" value="残" />
+            <el-option label="孕" value="孕" />
             <el-option label="军" value="军" />
           </el-select>
         </el-form-item>
@@ -181,7 +188,7 @@
 <script setup lang="ts">
 import { useHome } from '../composables/useHome'
 import { useTrainStore } from '../store/train'
-import { Check, Refresh, Plus, User } from '@element-plus/icons-vue'
+import { Check,  Plus, User } from '@element-plus/icons-vue'
 
 const trainStore = useTrainStore()
 
@@ -198,14 +205,14 @@ const {
   rules,
   isEdit,
   showTrainInfo,
-  refreshData,
   getTypeTagType,
   getRowClassName,
   handleMarkAsLeft,
   handleAdd,
   handleEdit,
   handleSubmit,
-  getTicketTime
+  getTicketTime,
+  handleTicketTimeChange
 } = useHome()
 </script>
 

@@ -2,6 +2,11 @@
   <div class="passenger">
     <h2>重点旅客历史记录</h2>
     
+    <div class="operation-buttons">
+      <el-button type="danger" @click="handleClearAll">清空历史记录</el-button>
+      <el-button type="primary" @click="handleExportExcel">导出Excel</el-button>
+    </div>
+
     <el-table :data="passengerStore.getAllPassengers()" style="width: 100%; margin-top: 20px">
       <el-table-column prop="id" label="序号" width="80" />
       <el-table-column prop="date" label="日期" />
@@ -44,6 +49,7 @@ import { useTrainStore } from '../store/train'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { Passenger } from '../types/passenger'
 import { PassengerType, PageType } from '../types/passenger'
+import * as XLSX from 'xlsx'
 
 const passengerStore = usePassengerStore()
 const trainStore = useTrainStore()
@@ -76,10 +82,60 @@ const getTicketTime = (trainNo: string): string => {
   const train = trainStore.getTrainByNo(trainNo)
   return train ? train.ticketTime : ''
 }
+
+// 清空所有历史记录
+const handleClearAll = () => {
+  ElMessageBox.confirm('确认清空所有历史记录？此操作不可恢复！', '警告', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(() => {
+    try {
+      passengerStore.clearAllPassengers()
+      console.log('清空后的数据：', passengerStore.getAllPassengers())
+      ElMessage.success('历史记录已清空')
+    } catch (error) {
+      console.error('清空历史记录失败：', error)
+      ElMessage.error('清空历史记录失败')
+    }
+  }).catch(() => {
+    ElMessage.info('已取消清空操作')
+  })
+}
+
+// 导出Excel
+const handleExportExcel = () => {
+  const passengers = passengerStore.getAllPassengers()
+  const data = passengers.map(p => ({
+    '序号': p.id,
+    '日期': p.date,
+    '车次': p.trainNo,
+    '姓名': p.name,
+    '类别': p.type,
+    '服务': p.service,
+    '开检时间': getTicketTime(p.trainNo),
+    '同行人数': p.companions,
+    '牌号': p.cardNo,
+    '备注': p.remark,
+    '状态': p.isServed ? '已服务' : '未服务'
+  }))
+
+  const ws = XLSX.utils.json_to_sheet(data)
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, '重点旅客历史记录')
+  XLSX.writeFile(wb, '重点旅客历史记录.xlsx')
+  ElMessage.success('导出成功')
+}
 </script>
 
 <style scoped>
 .passenger {
   padding: 20px;
+}
+
+.operation-buttons {
+  margin-bottom: 20px;
+  display: flex;
+  gap: 10px;
 }
 </style> 

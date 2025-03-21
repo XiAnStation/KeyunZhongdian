@@ -350,6 +350,22 @@ export function useHome() {
     })
   }
 
+  // 处理开检时间变更
+  const handleTicketTimeChange = (time: string): void => {
+    if (!currentTrain.value) return
+    
+    // 更新时间
+    currentTrain.value.ticketTime = time
+    
+    // 更新车次信息
+    trainStore.updateTrain(currentTrain.value.id, currentTrain.value)
+    
+    // 刷新数据
+    updateTodayPassengers()
+    
+    ElMessage.success('开检时间更新成功')
+  }
+
   return {
     currentTime,
     dialogVisible,
@@ -363,13 +379,13 @@ export function useHome() {
     rules,
     isEdit,
     showTrainInfo,
-    refreshData,
     getTypeTagType,
     getRowClassName,
     handleMarkAsLeft,
     handleAdd,
     handleEdit,
     handleSubmit,
-    getTicketTime
+    getTicketTime,
+    handleTicketTimeChange
   }
 } 
