@@ -5,30 +5,23 @@
         <el-card class="welcome-card">
           <template #header>
             <div class="welcome-header">
-              <span>欢迎使用重点旅客信息系统</span>
+              <span>今日待办</span>
               <el-tag type="success">{{ currentTime }}</el-tag>
             </div>
           </template>
           <div class="welcome-content">
             <el-row :gutter="20">
-              <el-col :span="8">
-                <el-statistic title="今日车次数" :value="trainCount">
-                  <template #prefix>
-                    <el-icon><Train /></el-icon>
-                  </template>
-                </el-statistic>
-              </el-col>
-              <el-col :span="8">
-                <el-statistic title="重点旅客数" :value="passengerCount">
+              <el-col :span="12">
+                <el-statistic title="剩余重点旅客数" :value="passengerCount">
                   <template #prefix>
                     <el-icon><User /></el-icon>
                   </template>
                 </el-statistic>
               </el-col>
-              <el-col :span="8">
-                <el-statistic title="服务项目数" :value="serviceCount">
+              <el-col :span="12">
+                <el-statistic title="已服务重点旅客数" :value="servedCount">
                   <template #prefix>
-                    <el-icon><Service /></el-icon>
+                    <el-icon><Check /></el-icon>
                   </template>
                 </el-statistic>
               </el-col>
@@ -43,15 +36,12 @@
         <el-card>
           <template #header>
             <div class="card-header">
-              <span>今日重点旅客</span>
+              <span>剩余重点旅客</span>
               <el-button-group>
-                <el-button type="primary" @click="refreshData">
-                  <el-icon><Refresh /></el-icon>
-                  刷新
-                </el-button>
-                <el-button type="success" @click="$router.push('/passenger')">
+                
+                <el-button type="success" @click="handleAdd">
                   <el-icon><Plus /></el-icon>
-                  添加旅客
+                  新增旅客
                 </el-button>
               </el-button-group>
             </div>
@@ -69,6 +59,7 @@
               </template>
             </el-table-column>
             <el-table-column prop="service" label="服务" />
+            <el-table-column prop="staffName" label="服务人员" width="100" />
             <el-table-column prop="cardNo" label="牌号" width="100" />
             <el-table-column label="开检时间" width="100">
               <template #default="scope">
@@ -86,7 +77,7 @@
                   <el-button 
                     size="small" 
                     type="primary"
-                    @click="$router.push(`/passenger?edit=${scope.row.id}`)">
+                    @click="handleEdit(scope.row)">
                     编辑
                   </el-button>
                   <el-button 
@@ -117,216 +108,116 @@
         <el-descriptions-item label="股道">{{ currentTrain?.track }}</el-descriptions-item>
         <el-descriptions-item label="站台">{{ currentTrain?.platform }}</el-descriptions-item>
         <el-descriptions-item label="站停">{{ currentTrain?.stopTime }}</el-descriptions-item>
+        <el-descriptions-item label="开检时间">
+          <el-time-picker
+            v-if="currentTrain"
+            v-model="currentTrain.ticketTime"
+            format="HH:mm"
+            placeholder="选择开检时间"
+            @change="handleTicketTimeChange"
+          />
+        </el-descriptions-item>
       </el-descriptions>
+    </el-dialog>
+
+    <!-- 新增/编辑旅客对话框 -->
+    <el-dialog 
+      v-model="addDialogVisible" 
+      :title="isEdit ? '编辑旅客' : '新增旅客'"
+      width="600px">
+      <el-form 
+        :model="form" 
+        :rules="rules"
+        ref="formRef"
+        label-width="100px">
+        <el-form-item label="日期" prop="date">
+          <el-date-picker 
+            v-model="form.date" 
+            type="date" 
+            placeholder="选择日期"
+            value-format="YYYY-MM-DD" />
+        </el-form-item>
+        <el-form-item label="车次" prop="trainNo">
+          <el-select 
+            v-model="form.trainNo" 
+            placeholder="请选择车次"
+            filterable>
+            <el-option
+              v-for="train in trainStore.trainList"
+              :key="train.trainNo"
+              :label="train.trainNo"
+              :value="train.trainNo"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="姓名" prop="name">
+          <el-input v-model="form.name" />
+        </el-form-item>
+        <el-form-item label="类别" prop="type">
+          <el-select v-model="form.type" placeholder="请选择类别">
+            <el-option label="老" value="老" />
+            <el-option label="弱" value="弱" />
+            <el-option label="病" value="病" />
+            <el-option label="残" value="残" />
+            <el-option label="孕" value="孕" />
+            <el-option label="军" value="军" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="服务" prop="service">
+          <el-input v-model="form.service" />
+        </el-form-item>
+        <el-form-item label="服务人员" prop="staffName">
+          <el-input v-model="form.staffName" placeholder="请输入服务工作人员姓名" />
+        </el-form-item>
+        <el-form-item label="同行人数" prop="companions">
+          <el-input-number v-model="form.companions" :min="0" />
+        </el-form-item>
+        <el-form-item label="牌号" prop="cardNo">
+          <el-input v-model="form.cardNo" />
+        </el-form-item>
+        <el-form-item label="备注" prop="remark">
+          <el-input v-model="form.remark" type="textarea" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="addDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="handleSubmit">确定</el-button>
+        </span>
+      </template>
     </el-dialog>
   </div>
 </template>
 
-<script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { usePassengerStore } from '../store/passenger'
+<script setup lang="ts">
+import { useHome } from '../composables/useHome'
 import { useTrainStore } from '../store/train'
-import { useRouter } from 'vue-router'
-import { ElNotification, ElMessageBox, ElMessage } from 'element-plus'
+import { Check,  Plus, User } from '@element-plus/icons-vue'
 
-const router = useRouter()
-const passengerStore = usePassengerStore()
 const trainStore = useTrainStore()
 
-const currentTime = ref(new Date().toLocaleDateString())
-const dialogVisible = ref(false)
-const currentTrain = ref(null)
-
-// 统计数据
-const trainCount = ref(trainStore.trainList.length)
-const passengerCount = ref(passengerStore.passengerList.length)
-const serviceCount = ref(new Set(passengerStore.passengerList.map(p => p.service)).size)
-
-// 今日旅客列表
-const todayPassengers = ref([])
-
-// 更新今日旅客列表
-const updateTodayPassengers = () => {
-  const today = new Date().toISOString().split('T')[0]
-  const passengers = passengerStore.passengerList.filter(p => p.date === today)
-  
-  // 按开检时间排序
-  todayPassengers.value = passengers.sort((a, b) => {
-    const timeA = getTicketTime(a.trainNo)
-    const timeB = getTicketTime(b.trainNo)
-    
-    // 如果时间格式正确，转换为分钟数进行比较
-    if (timeA && timeB && timeA.includes(':') && timeB.includes(':')) {
-      const [hoursA, minutesA] = timeA.split(':').map(Number)
-      const [hoursB, minutesB] = timeB.split(':').map(Number)
-      const totalMinutesA = hoursA * 60 + minutesA
-      const totalMinutesB = hoursB * 60 + minutesB
-      return totalMinutesA - totalMinutesB
-    }
-    
-    // 如果时间格式不正确，按字符串比较
-    return timeA.localeCompare(timeB)
-  })
-}
-
-// 根据类别返回标签类型
-const getTypeTagType = (type) => {
-  const typeMap = {
-    '重伤': 'danger',
-    '孕妇': 'warning',
-    '老人': 'info',
-    '儿童': 'success',
-    '其他': ''
-  }
-  return typeMap[type] || ''
-}
-
-// 显示车次详情
-const showTrainInfo = (trainNo) => {
-  currentTrain.value = trainStore.getTrainByNo(trainNo)
-  dialogVisible.value = true
-}
-
-// 刷新数据
-const refreshData = () => {
-  currentTime.value = new Date().toLocaleDateString()
-  // 这里可以添加其他刷新逻辑
-}
-
-// 获取车次的开检时间
-const getTicketTime = (trainNo) => {
-  const train = trainStore.getTrainByNo(trainNo)
-  return train ? train.ticketTime : ''
-}
-
-// 检查是否临近开检时间（20分钟内）
-const isNearTicketTime = (trainNo) => {
-  const ticketTime = getTicketTime(trainNo)
-  if (!ticketTime) return false
-  
-  const now = new Date()
-  const [hours, minutes] = ticketTime.split(':').map(Number)
-  const ticketDateTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes)
-  
-  // 计算时间差（分钟）
-  const diffMinutes = (ticketDateTime - now) / (1000 * 60)
-  return diffMinutes > 0 && diffMinutes <= 20
-}
-
-// 检查是否已过开检时间
-const isExpiredTicketTime = (trainNo) => {
-  const ticketTime = getTicketTime(trainNo)
-  if (!ticketTime) return false
-  
-  const now = new Date()
-  const [hours, minutes] = ticketTime.split(':').map(Number)
-  const ticketDateTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes)
-  
-  // 计算时间差（分钟）
-  const diffMinutes = (ticketDateTime - now) / (1000 * 60)
-  return diffMinutes < 0
-}
-
-// 检查并发送提醒
-const checkAndNotify = () => {
-  const now = new Date()
-  const today = now.toISOString().split('T')[0]
-  const passengers = passengerStore.passengerList.filter(p => p.date === today)
-  
-  passengers.forEach(passenger => {
-    const ticketTime = getTicketTime(passenger.trainNo)
-    if (!ticketTime) return
-    
-    const [hours, minutes] = ticketTime.split(':').map(Number)
-    const ticketDateTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes)
-    
-    // 计算时间差（分钟）
-    const diffMinutes = (ticketDateTime - now) / (1000 * 60)
-    
-    // 如果时间差在20分钟内且未过期，发送提醒
-    if (diffMinutes > 0 && diffMinutes <= 20) {
-      ElNotification({
-        title: '开检时间提醒',
-        type: 'warning',
-        duration: 10000,
-        position: 'top-right',
-        customClass: 'urgent-notification',
-        dangerouslyUseHTMLString: true,
-        message: `
-          <div style="font-size: 16px; font-weight: bold; color: #f56c6c;">
-            车次 ${passenger.trainNo} 的旅客 ${passenger.name} 即将开检
-          </div>
-          <div style="font-size: 14px; margin-top: 8px;">
-            开检时间：${ticketTime}
-          </div>
-        `
-      })
-    }
-  })
-}
-
-let checkInterval
-let updateInterval
-
-// 页面加载时启动定时检查
-onMounted(() => {
-  // 每分钟更新时间
-  setInterval(() => {
-    currentTime.value = new Date().toLocaleDateString()
-  }, 60000)
-  
-  // 每5分钟检查一次开检时间
-  checkInterval = setInterval(checkAndNotify, 5 * 60 * 1000)
-  
-  // 每10秒更新一次页面数据
-  updateInterval = setInterval(() => {
-    // 强制更新当前时间
-    currentTime.value = new Date().toLocaleDateString()
-    // 强制重新计算统计数据
-    trainCount.value = trainStore.trainList.length
-    passengerCount.value = passengerStore.passengerList.length
-    serviceCount.value = new Set(passengerStore.passengerList.map(p => p.service)).size
-    // 更新今日旅客列表
-    updateTodayPassengers()
-  }, 10000)
-  
-  // 立即执行一次更新
-  updateTodayPassengers()
-  // 立即执行一次检查
-  checkAndNotify()
-})
-
-// 页面卸载时清除定时器
-onUnmounted(() => {
-  if (checkInterval) {
-    clearInterval(checkInterval)
-  }
-  if (updateInterval) {
-    clearInterval(updateInterval)
-  }
-})
-
-// 获取行的类名
-const getRowClassName = ({ row }) => {
-  if (isNearTicketTime(row.trainNo)) {
-    return 'urgent-row'
-  } else if (isExpiredTicketTime(row.trainNo)) {
-    return 'expired-row'
-  }
-  return ''
-}
-
-// 处理离厅
-const handleMarkAsLeft = (row) => {
-  ElMessageBox.confirm('确认该旅客已离厅？', '提示', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning'
-  }).then(() => {
-    passengerStore.deletePassenger(row.id)
-    ElMessage.success('已删除离厅旅客')
-  })
-}
+const {
+  currentTime,
+  dialogVisible,
+  currentTrain,
+  passengerCount,
+  servedCount,
+  todayPassengers,
+  addDialogVisible,
+  formRef,
+  form,
+  rules,
+  isEdit,
+  showTrainInfo,
+  getTypeTagType,
+  getRowClassName,
+  handleMarkAsLeft,
+  handleAdd,
+  handleEdit,
+  handleSubmit,
+  getTicketTime,
+  handleTicketTimeChange
+} = useHome()
 </script>
 
 <style scoped>
@@ -377,18 +268,18 @@ const handleMarkAsLeft = (row) => {
 }
 
 .urgent-time {
-  color: #f56c6c;
+  color: #db3a3a;
   font-weight: bold;
 }
 
 :deep(.el-table__row) {
   &.urgent-row {
-    background-color: #fef0f0 !important;
+    background-color: #f79e03 !important;
   }
   
   &.expired-row {
-    background-color: #f5f7fa !important;
-    color: #909399 !important;
+    background-color: #fef0f0 !important;
+    color: #f56c6c !important;
   }
 }
 
@@ -400,7 +291,7 @@ const handleMarkAsLeft = (row) => {
   box-shadow: 0 2px 12px 0 rgba(0,0,0,.1);
   
   .el-notification__title {
-    color: #f56c6c;
+    color: #f70505;
     font-size: 18px;
     font-weight: bold;
   }

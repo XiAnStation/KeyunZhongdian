@@ -70,15 +70,17 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed } from 'vue'
 import * as XLSX from 'xlsx'
 import { useTrainStore } from '../store/train'
 import { ElMessage } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
+import type { UploadFile } from 'element-plus'
+import type { Train } from '../store/train'
 
 const trainStore = useTrainStore()
-const fileList = ref([])
+const fileList = ref<UploadFile[]>([])
 const searchQuery = ref('')
 const currentPage = ref(1)
 const pageSize = ref(20)
@@ -102,23 +104,23 @@ const paginatedData = computed(() => {
 })
 
 // 处理搜索
-const handleSearch = () => {
+const handleSearch = (): void => {
   currentPage.value = 1 // 重置到第一页
 }
 
 // 处理每页显示数量变化
-const handleSizeChange = (val) => {
+const handleSizeChange = (val: number): void => {
   pageSize.value = val
   currentPage.value = 1 // 重置到第一页
 }
 
 // 处理页码变化
-const handleCurrentChange = (val) => {
+const handleCurrentChange = (val: number): void => {
   currentPage.value = val
 }
 
 // 添加时间格式处理函数
-const formatTime = (value) => {
+const formatTime = (value: string | number | null | undefined): string => {
   if (!value) return ''
   
   // 如果已经是正确的时间格式，直接返回
@@ -137,25 +139,34 @@ const formatTime = (value) => {
   return ''
 }
 
-const handleFileChange = (file) => {
+const handleFileChange = (file: UploadFile): void => {
   fileList.value = [file]
 }
 
-const handleImport = () => {
+const handleImport = (): void => {
   if (fileList.value.length === 0) {
     ElMessage.warning('请先选择文件')
     return
   }
 
   const file = fileList.value[0].raw
+  if (!file) {
+    ElMessage.warning('文件无效')
+    return
+  }
+
   const reader = new FileReader()
 
   reader.onload = (e) => {
     try {
-      const data = e.target.result
+      const data = e.target?.result
+      if (!data) {
+        throw new Error('文件读取失败')
+      }
+
       const workbook = XLSX.read(data, { type: 'array' })
       const firstSheet = workbook.Sheets[workbook.SheetNames[0]]
-      const jsonData = XLSX.utils.sheet_to_json(firstSheet, { range: 1 })
+      const jsonData = XLSX.utils.sheet_to_json<Record<string, any>>(firstSheet, { range: 1 })
       
       console.log('Excel原始数据:', jsonData)
       
