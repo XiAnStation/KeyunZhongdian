@@ -21,6 +21,7 @@ export interface Passenger {
   name: string
   type: PassengerType
   service: string
+  staffName: string
   companions: number
   cardNo: string
   remark: string
@@ -34,6 +35,7 @@ export interface PassengerForm {
   name: string
   type: PassengerType
   service: string
+  staffName: string
   companions: number
   cardNo: string
   remark: string

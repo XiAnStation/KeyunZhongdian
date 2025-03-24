@@ -59,6 +59,7 @@
               </template>
             </el-table-column>
             <el-table-column prop="service" label="服务" />
+            <el-table-column prop="staffName" label="服务人员" width="100" />
             <el-table-column prop="cardNo" label="牌号" width="100" />
             <el-table-column label="开检时间" width="100">
               <template #default="scope">
@@ -165,6 +166,9 @@
         <el-form-item label="服务" prop="service">
           <el-input v-model="form.service" />
         </el-form-item>
+        <el-form-item label="服务人员" prop="staffName">
+          <el-input v-model="form.staffName" placeholder="请输入服务工作人员姓名" />
+        </el-form-item>
         <el-form-item label="同行人数" prop="companions">
           <el-input-number v-model="form.companions" :min="0" />
         </el-form-item>
@@ -270,7 +274,7 @@ const {
 
 :deep(.el-table__row) {
   &.urgent-row {
-    background-color: #fdf6ec !important;
+    background-color: #f79e03 !important;
   }
   
   &.expired-row {

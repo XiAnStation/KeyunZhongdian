@@ -108,7 +108,6 @@ async function createWindow() {
     const tryLoad = async (retries = 0) => {
       try {
         await mainWindow.loadURL('http://localhost:3000')
-        mainWindow.webContents.openDevTools()
       } catch (e) {
         if (retries < 3) {
           console.log(`重试加载开发服务器 (${retries + 1}/3)...`)
@@ -205,9 +204,6 @@ async function createWindow() {
       dialog.showErrorBox('加载错误', `页面加载失败: ${errorDescription}`)
     }
   })
-
-  // 在生产环境中也打开开发者工具以便调试
-  mainWindow.webContents.openDevTools()
 }
 
 // 应用程序准备就绪时创建窗口

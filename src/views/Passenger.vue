@@ -18,6 +18,7 @@
         </template>
       </el-table-column>
       <el-table-column prop="service" label="服务" />
+      <el-table-column prop="staffName" label="服务人员" width="100" />
       <el-table-column label="开检时间">
         <template #default="scope">
           {{ getTicketTime(scope.row.trainNo) }}
@@ -113,6 +114,7 @@ const handleExportExcel = () => {
     '姓名': p.name,
     '类别': p.type,
     '服务': p.service,
+    '服务人员': p.staffName,
     '开检时间': getTicketTime(p.trainNo),
     '同行人数': p.companions,
     '牌号': p.cardNo,

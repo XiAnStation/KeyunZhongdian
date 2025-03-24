@@ -30,6 +30,7 @@ export function useHome() {
     name: '',
     type: PassengerType.ELDERLY,
     service: '',
+    staffName: '',
     companions: 0,
     cardNo: '',
     remark: '',
@@ -42,6 +43,7 @@ export function useHome() {
     trainNo: [{ required: true, message: '请选择车次', trigger: 'change' }],
     name: [{ required: true, message: '请输入姓名', trigger: 'blur' }],
     type: [{ required: true, message: '请选择类别', trigger: 'change' }],
+    staffName: [{ required: true, message: '请输入服务工作人员姓名', trigger: 'blur' }],
     cardNo: [
       { required: true, message: '请输入牌号', trigger: 'blur' },
       {
@@ -295,6 +297,7 @@ export function useHome() {
       name: row.name,
       type: row.type,
       service: row.service,
+      staffName: row.staffName,
       companions: row.companions,
       cardNo: row.cardNo,
       remark: row.remark,
@@ -311,6 +314,7 @@ export function useHome() {
       name: '',
       type: PassengerType.ELDERLY,
       service: '',
+      staffName: '',
       companions: 0,
       cardNo: '',
       remark: '',
