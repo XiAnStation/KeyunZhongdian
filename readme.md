@@ -7,23 +7,23 @@
 ### 安装依赖
 
 ```bash
-yarn install
+npm install
 ```
 
 ### 开发模式
 
 ```bash
 # 启动 Vite 开发服务器
-yarn dev
+npm dev
 
 # 在另一个终端启动 Electron
-yarn electron:dev
+npm electron:dev
 ```
 
 ### 构建应用
 
 ```bash
-yarn electron:build
+npm electron:build
 ```
 
 ## 项目功能
@@ -45,20 +45,6 @@ vue3 electron typescript
 
 使用平台：
 windows单机桌面端应用
-
-开发工具：
-yarn
-
-## 运行方式
-
-在一个命令行运行vue
-```
-yarn run dev
-```
-在一个命令行运行 electron
-```
-yarn run electron:dev
-```
 
 
 todo list
